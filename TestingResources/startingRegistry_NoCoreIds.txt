@@ -1,0 +1,100 @@
+#LastName	FirstName	DoBMonth(1-12)	DoBDay(1-31)	DoBYear(1900-2050)	Gender(M|F)	MRN	CoreId	HCIPatientIds
+Baldwin	Tammy	2	11	1962	F	282089	GT4cr9Kr
+Barrasso	John	7	21	1952	M	393308		8576646
+Bennet	Michael	11	28	1964	M	880402	KJ3KV8XX	8485766;6625133
+Blackburn	Marsha	6	6	1952	F	432770	NV9Pc9XZ
+Blumenthal	Richard	2	13	1946	M	243193
+Blunt	Roy	1	10	1950	M	113865
+Booker	Cory	4	27	1969	M	636760
+Boozman	John	12	10	1950	M	778310
+Braun	Mike	3	24	1954	M	246694
+Brown	Sherrod	11	9	1952	F	698378
+Burr	Richard	11	30	1955	M	692181
+Cantwell	Maria	10	13	1958	F	284567
+Capito	Shelley Moore	11	26	1953	F	265576
+Cardin	Ben	10	5	1943	M	624429
+Carper	Tom	1	23	1947	M	507556
+Casey	Bob	4	13	1960	M	258179
+Cassidy	Bill	9	28	1957	M	804904
+Collins	Susan	12	7	1952	F	590088
+Coons	Chris	9	9	1963	M	894007
+Cornyn	John	2	2	1952	M	784769
+Cortez Masto	Catherine	3	29	1964	F	560133
+Cotton	Tom	5	13	1977	M	671024
+Cramer	Kevin	1	21	1961	M	358743
+Crapo	Mike	5	20	1951	M	996920
+Cruz	Ted	12	22	1970	M	595666
+Daines	Steve	8	20	1962	M	365143
+Duckworth	Tammy	3	12	1968	F	817177
+Durbin	Dick	11	21	1944	M	547896
+Ernst	Joni	7	1	1970	F	424388
+Feinstein	Dianne	6	22	1933	F	654734
+Fischer	Deb	3	1	1951	F	393182
+Gillibrand	Kirsten	12	9	1966	F	576344
+Graham	Lindsey	7	9	1955	F	993568
+Grassley	Chuck	9	17	1933	M	398492
+Hagerty	Bill	8	14	1959	M	313840
+Hassan	Maggie	2	27	1958	F	942116
+Hawley	Josh	12	31	1979	M	553802
+Heinrich	Martin	10	17	1971	M	212188
+Hickenlooper	John	2	7	1952	M	726940
+Hirono	Mazie	11	3	1947	M	354673
+Hoeven	John	3	13	1957	M	529453
+Hyde-Smith	Cindy	5	10	1958	F	762828
+Inhofe	Jim	11	17	1934	M	336879
+Johnson	Ron	4	8	1955	M	600108
+Kaine	Tim	2	26	1958	M	707870
+Kelly	Mark	2	21	1964	M	972857
+Kennedy	John	11	21	1951	M	128998
+King	Angus	3	31	1944	M	467253
+Klobuchar	Amy	5	25	1960	F	108080
+Lankford	James	3	4	1968	M	139457
+Leahy	Patrick	3	31	1940	M	465953
+Lee	Mike	6	4	1971	M	703436
+Luján	Ben Ray	6	7	1972	M	687356
+Lummis	Cynthia	9	10	1954	F	180152
+Manchin	Joe	8	24	1947	M	209724
+Markey	Ed	7	11	1946	M	458309
+Marshall	Roger	8	9	1960	M	760935
+McConnell	Mitch	2	20	1942	M	658401
+Menendez	Bob	1	1	1954	M	204136
+Merkley	Jeff	10	24	1956	M	624094
+Moran	Jerry	5	29	1954	M	873727
+Murkowski	Lisa	5	22	1957	F	685938
+Murphy	Chris	8	3	1973	M	445195
+Murray	Patty	10	11	1950	F	699379
+Ossoff	Jon	2	16	1987	M	106312
+Paul	Rand	1	7	1963	M	356683
+Peters	Gary	12	1	1958	M	922315
+Portman	Rob	12	19	1955	M	615429
+Reed	Jack	11	12	1949	M	533840
+Risch	Jim	5	3	1943	M	527983
+Romney	Mitt	3	12	1947	M	924203
+Rosen	Jacky	8	2	1957	F	344625
+Rounds	Mike	10	24	1954	M	843383
+Rubio	Marco	5	28	1971	M	656467
+Sanders	Bernie	9	8	1941	M	316248
+Sasse	Ben	2	22	1972	M	265811
+Schatz	Brian	10	20	1972	M	812291
+Schumer	Chuck	11	23	1950	M	191284
+Scott	Rick	12	1	1952	M	495319
+Scott	Tim	9	19	1965	M	504613
+Shaheen	Jeanne	1	28	1947	F	259095
+Shelby	Richard	5	6	1934	M	632495
+Sinema	Kyrsten	7	12	1976	F	377068
+Smith	Tina	3	4	1958	F	348659
+Stabenow	Debbie	4	29	1950	F	969019
+Sullivan	Dan	11	13	1964	M	967132
+Tester	Jon	8	21	1956	M	627341
+Thune	John	1	7	1961	M	149112
+Tillis	Thom	8	30	1960	M	468057
+Toomey	Pat	11	17	1961	M	399012
+Tuberville	Tommy	9	18	1954	M	456894
+Van Hollen	Chris	1	10	1959	M	215984
+Warner	Mark	12	15	1954	M	878741
+Warnock	Raphael	7	23	1969	M	150747
+Warren	Elizabeth	6	22	1949	F	430631
+Whitehouse	Sheldon	10	20	1955	M	170130
+Wicker	Roger	7	5	1951	M	194080
+Wyden	Ron	5	3	1949	M	455814
+Young	Todd	8	24	1972	M	592234

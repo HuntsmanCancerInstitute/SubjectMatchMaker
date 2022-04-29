@@ -1,0 +1,5 @@
+#LastName	FirstName	DoBMonth(1-12)	DoBDay(1-31)	DoBYear(1900-2050)	Gender(M|F)	MRN	CoreId	HCIPatientIds
+Barrasso	Jon	7	21	1952	M	393308
+Benet	Michael	11	28	1964	M	880402
+Blackburn	Marsha	6	6	1952	M	432770
+Baldwin	Tammy	2	11	1962	F	2813089
