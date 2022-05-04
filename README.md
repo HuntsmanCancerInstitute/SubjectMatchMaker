@@ -35,7 +35,7 @@ Optional:
 -m Number of top matches to return per query, defaults to 3
 
 Example: java -jar pathToUSeq/Apps/SubjectIdMatchMaker -r ~/PHI/SMMRegistry 
-      -q ~/Tempus/newPatients_PHI.txt -o ~/Tempus/SMMRes/ -a 
+      -q ~/Tempus/newPatients_PHI.txt -o ~/Tempus/SMMRes/ -a -t 4
 
 **************************************************************************************
 </pre>
