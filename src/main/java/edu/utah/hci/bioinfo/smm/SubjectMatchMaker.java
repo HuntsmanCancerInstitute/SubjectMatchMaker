@@ -518,7 +518,7 @@ public class SubjectMatchMaker {
 	public static void printDocs(){
 		Util.pl("\n" +
 				"**************************************************************************************\n" +
-				"**                            Subject Match Maker : April 2022                      **\n" +
+				"**                            Subject Match Maker : May 2022                        **\n" +
 				"**************************************************************************************\n" +
 				"SMM attempts to match subject's PHI keys (FirstLastName, DoB, Gender, MRN) against a\n"+
 				"registry of the same and fetch their unique subject coreIds.  SMM uses a sum of\n"+

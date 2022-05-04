@@ -12,7 +12,7 @@ import edu.utah.hci.bioinfo.smm.Util;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-
+/**Run this as a junit test before exporting a runnable jar.*/
 public class SubjectMatchMakerTest {
 
 	//define the test resource dir on your local computer
