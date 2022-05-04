@@ -2,7 +2,7 @@
 Master human subject ID generator and matcher based on PHI keys: lastFirstNames, dob, gender, mrn
 
 <pre>
-u0028003$ java -jar -Xmx2G ~/Code/SubjectMatchMaker/target/SubjectMatchMaker_0.1.jar 
+u0028003$ java -jar -Xmx2G ~/MyDownloadedJars/SubjectMatchMaker_0.1.jar 
 
 **************************************************************************************
 **                            Subject Match Maker : April 2022                      **
