@@ -15,7 +15,10 @@ import org.json.JSONObject;
 
 public class SubjectMatchMakerTest {
 
+	//define the test resource dir on your local computer
 	private static File testResourceDir = new File ("/Users/u0028003/Code/SubjectMatchMaker/TestingResources");
+	
+	
 	private static File testQueries = new File (testResourceDir, "testQueries.txt");
 	private static File testCoreIdQueries = new File (testResourceDir, "testCoreIdQueries.txt");
 	private static File testRegistry = new File (testResourceDir, "startingRegistry_NoCoreIds.txt");
