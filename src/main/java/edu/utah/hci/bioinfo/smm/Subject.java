@@ -24,6 +24,7 @@ public class Subject implements Comparable<Subject> {
 	private boolean topMatchFound = false;
 	private Subject[] topMatches = null;
 	private double[] topMatchScores = null;
+	private String matchWarning = null;
 	
 	
 	//constructor
@@ -34,8 +35,11 @@ public class Subject implements Comparable<Subject> {
 		//optional: coreId otherIds
 		//              7        8
 		if (t.length< 7) throw new IOException("ERROR: too few fields in subject dataline index : "+dataLineIndex);
-		//remove leading or trailing whitespace
-		for (int i=0; i<t.length; i++) t[i] = t[i].trim();
+		//remove leading or trailing whitespace and placeholder '.'
+		for (int i=0; i<t.length; i++) {
+			t[i] = t[i].trim();
+			if (t[i].equals(".")) t[i] = "";
+		}
 
 		lastName = t[0];
 		firstName = t[1];
@@ -119,8 +123,15 @@ public class Subject implements Comparable<Subject> {
 		//is there a qualifying top match
 		if (numTopMatches == 1) topMatchFound = true;
 
-		//more than one where the first score is < the second
-		else if (numTopMatches > 1 && (topMatches[0].score < topMatches[1].score)) topMatchFound = true;
+		//more than one where the first score is < or = to the second
+		else if (numTopMatches > 1) {
+			if (topMatches[0].score < topMatches[1].score) topMatchFound = true;
+			else if (topMatches[0].score == topMatches[1].score) {
+				topMatchFound = true;
+				matchWarning = "Top matches have the same score ("+topMatches[0].score+"), selecting the first.";
+			}
+			else topMatchFound = false;
+		}
 
 		//top match not found, create new coreId?
 		else {
@@ -129,7 +140,6 @@ public class Subject implements Comparable<Subject> {
 				coreId = coreIdMaker.createCoreId();
 				coreIdCreated = true;
 			}
-
 		}
 	}
 
@@ -239,6 +249,15 @@ public class Subject implements Comparable<Subject> {
 		if (o.score > this.score) return -1;
 		return 0;
 	}
+	
+	/**Returns the coreId associated with this subject, either from the topMatch if a topMatch was found, a newly generated coreId, or null.*/
+	public String getCoreIdNewOrMatch() {
+		//this is old or newly created
+		if (coreId != null) return coreId;
+		//from a successful match
+		if (topMatchFound) return topMatches[0].getCoreId();
+		return null;
+	}
 
 	public String[] getComparisonKeys() {
 		return comparisonKeys;
@@ -299,6 +318,11 @@ public class Subject implements Comparable<Subject> {
 
 	public boolean isTopMatchFound() {
 		return topMatchFound;
+	}
+
+
+	public String getMatchWarning() {
+		return matchWarning;
 	}
 
 

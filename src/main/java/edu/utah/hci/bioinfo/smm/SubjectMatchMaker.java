@@ -23,10 +23,11 @@ public class SubjectMatchMaker {
 	private File querySubjectFile = null;
 	private File matchResultsDirectory = null;
 	private boolean addQuerySubjectsToRegistry = false;
+	private boolean verbose = true;
 
 	//internal
-	private Subject[] allSubjects = null;
-	private Subject[] testSubjects = null;
+	private Subject[] registrySubjects = null;
+	private Subject[] querySubjects = null;
 	private String[] coreIds = null;
 	private int numberThreads = 0;
 	private int minSubjectsPerChunk = 100;
@@ -53,12 +54,12 @@ public class SubjectMatchMaker {
 
 			//load registry subjects
 			Util.p("\nLoading registry... ");
-			allSubjects = loadSubjectData(subjectRegistryFile, true);
-			Util.pl(allSubjects.length);
+			registrySubjects = loadSubjectData(subjectRegistryFile, true);
+			Util.pl(registrySubjects.length);
 
 			//any new coreIds created? if so then exit
 			boolean created = false;
-			for (Subject s: allSubjects) {
+			for (Subject s: registrySubjects) {
 				if (s.isCoreIdCreated()) {
 					created = true;
 					break;
@@ -77,15 +78,15 @@ public class SubjectMatchMaker {
 
 				//load test subjects, will throw error if malformed
 				Util.p("\nLoading test subjects to match against the registry... ");
-				testSubjects = loadSubjectData(querySubjectFile, false);
-				if (testSubjects == null && coreIds != null) lookUpSubjectInfo();
+				querySubjects = loadSubjectData(querySubjectFile, false);
+				if (querySubjects == null && coreIds != null) lookUpSubjectInfo();
 				else {
-					Util.pl(testSubjects.length);
+					Util.pl(querySubjects.length);
 
 					//make a matcher for each chunk
 					int numPerCore = fetchMinPerCore();
 
-					Subject[][] split = chunk(allSubjects, numPerCore);
+					Subject[][] split = chunk(registrySubjects, numPerCore);
 					matchers = new MatcherEngine[split.length];
 					Util.pl("\nLaunching "+split.length+" lookup threads...");
 					for (int i=0; i< matchers.length; i++)  matchers[i] = new MatcherEngine(split[i], this);
@@ -120,7 +121,7 @@ public class SubjectMatchMaker {
 
 			//finish and calc run time
 			double diffTime = ((double)(System.currentTimeMillis() -startTime))/1000;
-			Util.pl("\nDone! "+Math.round(diffTime)+" Sec\n");
+			if (verbose) Util.pl("\nDone! "+Math.round(diffTime)+" Sec\n");
 		} catch (Exception e) {
 			Util.el("\nERROR running the SubjectIdMatchMaker, aborting. ");
 			e.printStackTrace();
@@ -155,7 +156,7 @@ public class SubjectMatchMaker {
 		if (addQuerySubjectsToRegistry) {
 			//is there anything to update
 			ArrayList<Subject> toAdd = new ArrayList<Subject>();
-			for (Subject s: testSubjects) {
+			for (Subject s: querySubjects) {
 				if (s.isCoreIdCreated()) toAdd.add(s);
 			}
 			if (toAdd.size()!=0) {
@@ -169,9 +170,7 @@ public class SubjectMatchMaker {
 		//are they just looking to see what matches and not add non matches to the registry? if so null the coreIdMaker
 		if (addQuerySubjectsToRegistry == false) coreIdMaker = null; 
 		//for each query
-		for (Subject tp: testSubjects) tp.setMatches(coreIdMaker, maxEditScoreForMatch);
-		
-		
+		for (Subject tp: querySubjects) tp.setMatches(coreIdMaker, maxEditScoreForMatch);
 	}
 
 	private void saveUpdatedRegistry(ArrayList<Subject> additional) throws IOException {
@@ -181,7 +180,7 @@ public class SubjectMatchMaker {
 		updatedRegistry = new File (matchResultsDirectory, "updatedRegistry"+time+"_PHI.txt");
 		PrintWriter out = new PrintWriter ( new FileWriter(updatedRegistry));
 		out.println("#LastName\tFirstName\tDoBMonth(1-12)\tDoBDay(1-31)\tDoBYear(1900-2050)\tGender(M|F)\tMRN\tCoreId\totherId(s);delimited)");
-		for (Subject u: allSubjects) out.println(u.toString());
+		for (Subject u: registrySubjects) out.println(u.toString());
 		if (additional != null) for (Subject u: additional) out.println(u.toString());
 		out.close();
 		
@@ -208,10 +207,10 @@ public class SubjectMatchMaker {
 
 	private void loadIdSubjectHash() throws IOException {
 		coreIdSubject = new HashMap<String,Subject>();
-		for (int i=0; i< allSubjects.length; i++) {
-			String coreId = allSubjects[i].getCoreId();
+		for (int i=0; i< registrySubjects.length; i++) {
+			String coreId = registrySubjects[i].getCoreId();
 			if (coreIdSubject.containsKey(coreId)) throw new IOException("\nERROR: the coreId "+coreId+" associated with registry subject["+i+"] is a duplicate of a prior registry subject. Duplicate coreIds are not permitted." );
-			coreIdSubject.put(coreId, allSubjects[i]);
+			coreIdSubject.put(coreId, registrySubjects[i]);
 		}
 	}
 
@@ -235,7 +234,7 @@ public class SubjectMatchMaker {
 		JSONArray searchArray = new JSONArray();
 		
 		//for each query
-		for (Subject tp: testSubjects) {
+		for (Subject tp: querySubjects) {
 			JSONObject search = new JSONObject();
 			
 			//get the base features
@@ -247,12 +246,14 @@ public class SubjectMatchMaker {
 			Subject[] topMatches = tp.getTopMatches();
 			for (int i=0; i< topMatches.length; i++) topMatches[i].setScore(topScores[i]);
 			
-			//
+			//query results
 			JSONObject result = new JSONObject();
 			result.put("topMatchFound", tp.isTopMatchFound());
 			if (tp.isTopMatchFound()) result.put("topMatchCoreId", topMatches[0].getCoreId());
 			result.put("newCoreIdCreated", tp.isCoreIdCreated());
 			if (tp.isCoreIdCreated()) result.put("newCoreId", tp.getCoreId());
+			//match warning?
+			if (tp.getMatchWarning()!=null) result.put("topMatchWarning", tp.getMatchWarning());
 			
 			JSONArray matches = new JSONArray();
 			for (int i=0; i< topMatches.length; i++) {
@@ -290,7 +291,7 @@ public class SubjectMatchMaker {
 		out.println();
 		
 		//for each subject
-		for (Subject tp: testSubjects) {
+		for (Subject tp: querySubjects) {
 			
 			//reset the scores in the top matches, these can change 
 			double[] topScores = tp.getTopMatchScores();
@@ -324,7 +325,7 @@ public class SubjectMatchMaker {
 	}
 
 	private int fetchMinPerCore() {
-		double numAllSubjects = allSubjects.length;
+		double numAllSubjects = registrySubjects.length;
 		for (int i=numberThreads; i >=1; i--) {
 			int numPerChunk = (int)Math.round(numAllSubjects/(double)i);
 			if (numPerChunk >= minSubjectsPerChunk) return numPerChunk;
@@ -369,7 +370,7 @@ public class SubjectMatchMaker {
 	/**This method will process each argument and assign new variables*/
 	public void processArgs(String[] args){
 		try {
-			Util.pl("\nArguments: "+ Util.stringArrayToString(args, " ") +"\n");
+			if (verbose) Util.pl("\nArguments: "+ Util.stringArrayToString(args, " ") +"\n");
 			Pattern pat = Pattern.compile("-[a-zA-Z]");
 			File subjectRegistryDir = null;
 			for (int i = 0; i<args.length; i++){
@@ -387,6 +388,7 @@ public class SubjectMatchMaker {
 						case 'a': addQuerySubjectsToRegistry = true; break;
 						case 'u': updatedRegistry = new File(args[++i]); break;
 						case 's': maxEditScoreForMatch = Double.parseDouble(args[++i]); break;
+						case 'v': verbose = false; break;
 						default: Util.printErrAndExit("\nProblem, unknown option! " + mat.group());
 						}
 					}
@@ -421,7 +423,7 @@ public class SubjectMatchMaker {
 			if (numberThreads == 0 || numberThreads > numProc) numberThreads = numProc;		
 
 			//print params
-			printOptions();
+			if (verbose) printOptions();
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -533,8 +535,8 @@ public class SubjectMatchMaker {
 				"      registry of subjects, tab delimited file(.gz/.zip OK), one subject per line: \n"+
 				"      lastName firstName dobMonth(1-12) dobDay(1-31) dobYear(1900-2050) gender(M|F)\n"+
 				"      mrn coreId otherIds. The last two columns are optional. Semicolon delimit\n"+
-				"      otherIds. Use space for missing info. CoreIds will be created as needed.\n"+
-				"      Example: Biden Joseph 11 20 1942 M 19485763 vd3ec3XR 7474732,847362\n"+
+				"      otherIds. Use '.' for missing info. CoreIds will be created as needed.\n"+
+				"      Example: Biden Joseph 11 20 1942 M 19485763 . 7474732,847362\n"+
 				"-q File containing queries to match to the registry, ditto. Alternatively, provide\n"+
 				"      a single column of coreIds to use in fetching subject info from the registry.\n"+
 				"-o Directory to write out the match result reports.\n"+
@@ -552,8 +554,8 @@ public class SubjectMatchMaker {
 				"\n**************************************************************************************\n");
 	}
 
-	public Subject[] getTestSubjects() {
-		return testSubjects;
+	public Subject[] getQuerySubjects() {
+		return querySubjects;
 	}
 	public int getNumberTopMatchesToReturn() {
 		return numberTopMatchesToReturn;
@@ -564,5 +566,6 @@ public class SubjectMatchMaker {
 	public double getMissingAdditionalKeyPenalty() {
 		return missingAdditionalKeyPenalty;
 	}
+
 
 }

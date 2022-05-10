@@ -11,7 +11,7 @@ public class MatcherEngine implements Runnable {
 	private boolean failed = false;
 	// These subjects are only only present in this thread
 	private Subject[] subjectChunk = null;
-	private Subject[] testSubjects = null;
+	private Subject[] querySubjects = null;
 	private double missingOneKeyPenalty = 0;
 	private double missingAdditionalKeyPenalty = 0;
 	private int numMatchesToReturn = 0;
@@ -20,7 +20,7 @@ public class MatcherEngine implements Runnable {
 	
 	public MatcherEngine(Subject[] subjectChunk, SubjectMatchMaker pm) {
 		this.subjectChunk = subjectChunk;
-		testSubjects = pm.getTestSubjects();
+		querySubjects = pm.getQuerySubjects();
 		missingOneKeyPenalty = pm.getMissingOneKeyPenalty();
 		missingAdditionalKeyPenalty = pm.getMissingAdditionalKeyPenalty();
 		numMatchesToReturn = pm.getNumberTopMatchesToReturn();
@@ -31,14 +31,14 @@ public class MatcherEngine implements Runnable {
 	public void run() {	
 		try {
 			//create a random set of index positions
-			int[] indexes = new int[testSubjects.length];
+			int[] indexes = new int[querySubjects.length];
 			for (int i=0; i< indexes.length; i++) indexes[i] = i;
 			randomize(indexes, new Random());
 			
 			//for each subject, find the top hits from the threads chunk of db subjects
 			for (int i=0; i< indexes.length; i++) {
-				Subject test = testSubjects[indexes[i]];
-				findTopMatches(test);
+				Subject query = querySubjects[indexes[i]];
+				findTopMatches(query);
 			}
 			
 		} catch (Exception e) {
@@ -63,17 +63,17 @@ public class MatcherEngine implements Runnable {
 
 
 	/*Find top matches*/
-	private void findTopMatches(Subject test) {
+	private void findTopMatches(Subject query) {
 		
 		//set the scores and sort smallest to largest
-		String[] testKeys = test.getComparisonKeys();
-		for (Subject c: subjectChunk) c.setScore(scoreKeysLD(testKeys, c.getComparisonKeys()));
+		String[] queryKeys = query.getComparisonKeys();
+		for (Subject c: subjectChunk) c.setScore(scoreKeysLD(queryKeys, c.getComparisonKeys()));
 		Arrays.sort(subjectChunk);
 		
-		//add top hits to the test subject in a thread safe manner
+		//add top hits to the query subject in a thread safe manner
 		Subject[] topHits = new Subject[numMatchesToReturn];
 		for (int i=0; i<topHits.length; i++)topHits[i] = subjectChunk[i];
-		test.addTopCandidates(topHits);
+		query.addTopCandidates(topHits);
 		
 	}
 
@@ -81,22 +81,22 @@ public class MatcherEngine implements Runnable {
 	/**Score keys using Levenshtein Distance
 	 * If more than one key is missing, a value of 1 is added to the return score for each.  If just one, then it is ignored.
 	 * Thus it's ok to be missing one key, but afterward the penalty is severe. */
-	private double scoreKeysLD(String[] test, String[] db) {
+	private double scoreKeysLD(String[] query, String[] db) {
 
-//IO.pl("\nT: "+Misc.stringArrayToString(test, ",")+"\nD: "+Misc.stringArrayToString(db, ","));
+//IO.pl("\nT: "+Misc.stringArrayToString(query, ",")+"\nD: "+Misc.stringArrayToString(db, ","));
 			//for each key
 			double sum = 0;
 			int numMissing = 0;
-			for (int i=0; i< test.length; i++) {
-//IO.p("\t"+test[i]+" vs "+db[i]+" ");
+			for (int i=0; i< query.length; i++) {
+//IO.p("\t"+query[i]+" vs "+db[i]+" ");
 				//missing?
-				if (test[i].length() == 0 || db[i].length() == 0) {
+				if (query[i].length() == 0 || db[i].length() == 0) {
 					numMissing++;
 //IO.pl("missing");
 				}
 				else {
-					double edits = ld.apply(test[i], db[i]);
-					double length = test[i].length();
+					double edits = ld.apply(query[i], db[i]);
+					double length = query[i].length();
 					double ws = edits/length;
 //IO.pl(edits+"/"+length+"="+ws);
 					sum+= ws;
