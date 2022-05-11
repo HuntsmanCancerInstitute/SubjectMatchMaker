@@ -65,9 +65,13 @@ public class MatcherEngine implements Runnable {
 	/*Find top matches*/
 	private void findTopMatches(Subject query) {
 		
-		//set the scores and sort smallest to largest
+		//set the match score for every query:registry comparison
 		String[] queryKeys = query.getComparisonKeys();
-		for (Subject c: subjectChunk) c.setScore(scoreKeysLD(queryKeys, c.getComparisonKeys()));
+		for (Subject c: subjectChunk) {
+			double score = scoreKeysLD(queryKeys, c.getComparisonKeys());
+			c.setScore(score);
+		}
+		//sort smallest to largest
 		Arrays.sort(subjectChunk);
 		
 		//add top hits to the query subject in a thread safe manner
@@ -81,7 +85,7 @@ public class MatcherEngine implements Runnable {
 	/**Score keys using Levenshtein Distance
 	 * If more than one key is missing, a value of 1 is added to the return score for each.  If just one, then it is ignored.
 	 * Thus it's ok to be missing one key, but afterward the penalty is severe. */
-	private double scoreKeysLD(String[] query, String[] db) {
+	public double scoreKeysLD(String[] query, String[] db) {
 
 //IO.pl("\nT: "+Misc.stringArrayToString(query, ",")+"\nD: "+Misc.stringArrayToString(db, ","));
 			//for each key

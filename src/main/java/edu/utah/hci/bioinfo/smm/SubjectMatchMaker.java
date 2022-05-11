@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -54,7 +55,7 @@ public class SubjectMatchMaker {
 
 			//load registry subjects
 			Util.p("\nLoading registry... ");
-			registrySubjects = loadSubjectData(subjectRegistryFile, true);
+			registrySubjects = loadSubjectData(subjectRegistryFile, true, false);
 			Util.pl(registrySubjects.length);
 
 			//any new coreIds created? if so then exit
@@ -78,7 +79,7 @@ public class SubjectMatchMaker {
 
 				//load test subjects, will throw error if malformed
 				Util.p("\nLoading test subjects to match against the registry... ");
-				querySubjects = loadSubjectData(querySubjectFile, false);
+				querySubjects = loadSubjectData(querySubjectFile, false, true);
 				if (querySubjects == null && coreIds != null) lookUpSubjectInfo();
 				else {
 					Util.pl(querySubjects.length);
@@ -102,8 +103,11 @@ public class SubjectMatchMaker {
 						if (m.isFailed()) throw new IOException("ERROR: Matcher engine issue! \n");
 					}
 
-					//check for matches
+					//check for matches and assign or make coreIds
 					checkForMatches();
+					
+					//compare queries to each other
+					compareQueries(matchers[0]);
 
 					//print the full json report with all of the details
 					printJson();
@@ -130,6 +134,39 @@ public class SubjectMatchMaker {
 		}
 	}
 
+	/* Looks for queries that didn't match and have a new coreId, that do match each other, and assigns them all of the same new coreId.
+	 * Don't want to create multiple new coreIds for the same person.*/
+	private void compareQueries(MatcherEngine me) {
+		ArrayList<Subject> passing = new ArrayList<Subject>();
+
+		//for each query
+		for (int i=0; i< querySubjects.length; i++) {
+			Subject a = querySubjects[i];
+			
+			//did this query have a new coreId assigned to it? thus no match
+			if (a.isCoreIdCreated() == false) continue;
+			
+			//look to see if there are other such queries
+			String[] aKeys = a.getComparisonKeys();
+			passing.clear();
+			for (int j=0; j< querySubjects.length; j++) {
+				Subject b = querySubjects[j];
+				//don't compare to self or to those who didn't have a new coreId assigned
+				if (b.isCoreIdCreated()==false || i==j) continue;
+				
+				//is the score passing? save it
+				double score = me.scoreKeysLD(aKeys, b.getComparisonKeys());
+				if (score <= maxEditScoreForMatch) passing.add(b);
+			}
+			
+			//any passing? assign all the same new coreId using the first query's 
+			if (passing.size()!=0) {
+				String newCoreId = a.getCoreId();
+				for (int x=0; x< passing.size(); x++) passing.get(x).setCoreId(newCoreId);
+			}			
+		}
+	}
+
 	private void lookUpSubjectInfo() throws IOException {
 		Util.pl("\n\nLooking up and writing subject info for the provided coreIds... ");
 		//check all are coreIds
@@ -151,16 +188,24 @@ public class SubjectMatchMaker {
 		
 	}
 
-	private void updateRegistryWithNoMatches() throws IOException {
+	private void updateRegistryWithNoMatches() throws Exception {
 		//do they want to update the registry
 		if (addQuerySubjectsToRegistry) {
 			//is there anything to update
 			ArrayList<Subject> toAdd = new ArrayList<Subject>();
+			HashSet<String> newCoreIds = new HashSet<String>();
 			for (Subject s: querySubjects) {
-				if (s.isCoreIdCreated()) toAdd.add(s);
+				if (s.isCoreIdCreated()) {
+					//must watch out for duplicate new coreIds, only add the first Subject query
+					String cid = s.getCoreId();
+					if (newCoreIds.contains(cid) == false) {
+						newCoreIds.add(cid);
+						toAdd.add(s);
+					}
+				}
 			}
 			if (toAdd.size()!=0) {
-				Util.pl("\nSaving updated registry with unmatched queries...");
+				Util.pl("\nSaving updated registry with "+toAdd.size()+" unmatched queries...");
 				saveUpdatedRegistry(toAdd);
 			}
 		}
@@ -173,11 +218,12 @@ public class SubjectMatchMaker {
 		for (Subject tp: querySubjects) tp.setMatches(coreIdMaker, maxEditScoreForMatch);
 	}
 
-	private void saveUpdatedRegistry(ArrayList<Subject> additional) throws IOException {
+	private void saveUpdatedRegistry(ArrayList<Subject> additional) throws Exception {
 		String time = new Long(System.currentTimeMillis()).toString();
+		File registryDir = subjectRegistryFile.getParentFile();
 		
 		//write out updated registry
-		updatedRegistry = new File (matchResultsDirectory, "updatedRegistry"+time+"_PHI.txt");
+		updatedRegistry = new File (registryDir, "updatedRegistry"+time+"_PHI.txt");
 		PrintWriter out = new PrintWriter ( new FileWriter(updatedRegistry));
 		out.println("#LastName\tFirstName\tDoBMonth(1-12)\tDoBDay(1-31)\tDoBYear(1900-2050)\tGender(M|F)\tMRN\tCoreId\totherId(s);delimited)");
 		for (Subject u: registrySubjects) out.println(u.toString());
@@ -185,16 +231,20 @@ public class SubjectMatchMaker {
 		out.close();
 		
 		//rename original
-		File oldRegistry = new File (subjectRegistryFile.getParentFile(), "oldRegistry_"+time+"_PHI.txt");
+		File oldRegistry = new File (registryDir, "oldRegistry_"+time+"_PHI.txt");
 		boolean renamed = subjectRegistryFile.renameTo(oldRegistry);
-		if (renamed == false) throw new IOException("ERROR: failed to rename registry file "+subjectRegistryFile+" to "+oldRegistry);
-		Util.pl("\tRenamed the provided registry file "+subjectRegistryFile.getName()+" to "+oldRegistry.getName());
+		if (renamed == false) throw new IOException("ERROR: failed to rename original registry file "+subjectRegistryFile+" to "+oldRegistry);
+		Util.pl("\tRenamed the original registry file "+subjectRegistryFile.getName()+" to "+oldRegistry.getName());
+		
+		//wait a  sec to allow system to catch up, needed for redwood disk shelf
+		Thread.sleep(500);
 		
 		//move the saved registry to current
-		File newRegistry = new File (subjectRegistryFile.getParentFile(), "currentRegistry_"+time+"_PHI.txt");
+		File newRegistry = new File (registryDir, "currentRegistry_"+time+"_PHI.txt");
 		renamed = updatedRegistry.renameTo(newRegistry);
-		if (renamed == false) throw new IOException("ERROR: failed to rename registry file "+subjectRegistryFile+" to "+oldRegistry);
+		if (renamed == false) throw new IOException("ERROR: failed to rename updated registry file "+updatedRegistry+" to "+newRegistry);
 		Util.pl("\tUpdated registry successfully saved to "+newRegistry.getName()+". Use this for new searches.");
+		updatedRegistry = newRegistry;
 		
 	}
 
@@ -333,7 +383,7 @@ public class SubjectMatchMaker {
 		return minSubjectsPerChunk;
 	}
 
-	private Subject[] loadSubjectData(File dataFile, boolean addCoreId) throws IOException {
+	private Subject[] loadSubjectData(File dataFile, boolean addCoreId, boolean isQuery) throws IOException {
 		String line = null;
 		BufferedReader in = Util.fetchBufferedReader(dataFile);
 		ArrayList<Subject> pAL = new ArrayList<Subject>();
@@ -343,7 +393,7 @@ public class SubjectMatchMaker {
 			if (line.length()==0 || line.startsWith("#"))continue;
 			String[] fields = Util.TAB.split(line);
 			if (fields.length == 1) cAL.add(fields[0]);
-			else pAL.add(new Subject(index, fields, addCoreId, coreIdMaker));
+			else pAL.add(new Subject(index, fields, addCoreId, coreIdMaker, isQuery));
 			index++;
 		}
 		in.close();
@@ -565,6 +615,10 @@ public class SubjectMatchMaker {
 	}
 	public double getMissingAdditionalKeyPenalty() {
 		return missingAdditionalKeyPenalty;
+	}
+
+	public File getUpdatedRegistry() {
+		return updatedRegistry;
 	}
 
 

@@ -114,6 +114,9 @@ public class SubjectMatchMakerTest {
 			//launch the real search, this will grab the updated registry and generate two output files, no additional update
 			smm = new SubjectMatchMaker(args);
 			
+			//check that the registry has only one new obama entry
+			checkObama(smm);
+			
 			//check the json file
 			File json = new File(outputDirectory, "matchReport_PHI.json");
 			checkNoUpdateJson(json, true);
@@ -123,6 +126,8 @@ public class SubjectMatchMakerTest {
 			smm = new SubjectMatchMaker(args);
 			checkWithUpdateJson(json2, true);
 			
+			
+			
 			cleanupLocalDirs();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -130,6 +135,14 @@ public class SubjectMatchMakerTest {
 		}
 	}
 	
+	private void checkObama(SubjectMatchMaker smm) {
+		int numObamaFound = 0;
+		String[] lines = Util.loadFile(smm.getUpdatedRegistry());
+		for (String l: lines) if (l.contains("Obama")) numObamaFound++;
+		assertTrue(numObamaFound==1);
+		
+	}
+
 	@Test
 	public void runCoreIdSearch() {
 		try {
@@ -172,7 +185,7 @@ public class SubjectMatchMakerTest {
 	     assertTrue(main.has("searchSettings"));
 	     
 	     JSONArray searches = main.getJSONArray("searches");
-	     assertTrue(searches.length()==4);
+	     assertTrue(searches.length()==6);
 	     
 	     //for each search
 	     for (int i=0; i< searches.length(); i++) {
@@ -205,7 +218,7 @@ public class SubjectMatchMakerTest {
 	    		 assertFalse(result.has("newCoreId"));
 	    		 JSONArray matches = result.getJSONArray("matches");
 	    		 JSONObject match = matches.getJSONObject(2);
-	    		 assertTrue(match.getString("lastName").equals("Cassidy"));
+	    		 assertTrue(match.getString("lastName").equals("Warner"));
 	    	 }
 	    	 else if (lastName.equals("Blackburn")) {
 	    		 assertTrue(result.has("topMatchCoreId"));
@@ -217,6 +230,10 @@ public class SubjectMatchMakerTest {
 	    		 
 	    	 }
 	    	 else if (lastName.equals("Baldwin")) {
+	    		 assertTrue(result.has("topMatchCoreId"));
+	    		 assertFalse(result.has("newCoreId"));
+	    	 }
+	    	 else if (lastName.equals("Obama")) {
 	    		 assertTrue(result.has("topMatchCoreId"));
 	    		 assertFalse(result.has("newCoreId"));
 	    	 }
@@ -232,7 +249,7 @@ public class SubjectMatchMakerTest {
 	     assertTrue(main.has("searchSettings"));
 	     
 	     JSONArray searches = main.getJSONArray("searches");
-	     assertTrue(searches.length()==4);
+	     assertTrue(searches.length()==6);
 	     
 	     //for each search
 	     for (int i=0; i< searches.length(); i++) {
@@ -274,6 +291,11 @@ public class SubjectMatchMakerTest {
 	    		 
 	    	 }
 	    	 else if (lastName.equals("Baldwin")) {
+	    		 assertFalse(result.has("topMatchCoreId"));
+	    		 if (newCoreIdsCreated)  assertTrue(result.has("newCoreId"));
+	    		 else  assertFalse(result.has("newCoreId"));
+	    	 }
+	    	 else if (lastName.equals("Obama")) {
 	    		 assertFalse(result.has("topMatchCoreId"));
 	    		 if (newCoreIdsCreated)  assertTrue(result.has("newCoreId"));
 	    		 else  assertFalse(result.has("newCoreId"));

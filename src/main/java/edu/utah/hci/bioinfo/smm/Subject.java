@@ -18,6 +18,7 @@ public class Subject implements Comparable<Subject> {
 	private String[] otherSubjectIds = null;
 	private String coreId = null;
 	private boolean coreIdCreated = false;
+	private boolean isQuery = false;
 
 	private double score = 0; //this is a temp value and changes
 	private String[] comparisonKeys = null;
@@ -28,8 +29,9 @@ public class Subject implements Comparable<Subject> {
 	
 	
 	//constructor
-	public Subject(int dataLineIndex, String[] t, boolean addCoreId, CoreId coreIdMaker) throws IOException {
-
+	public Subject(int dataLineIndex, String[] t, boolean addCoreId, CoreId coreIdMaker, boolean isQuery) throws IOException {
+		this.isQuery = isQuery;
+		
 		//required: lastName firstName dobMonth dobDay dobYear gender mrn 
 		//             0        1          2       3      4      5     6
 		//optional: coreId otherIds
@@ -323,6 +325,16 @@ public class Subject implements Comparable<Subject> {
 
 	public String getMatchWarning() {
 		return matchWarning;
+	}
+
+
+	public boolean isQuery() {
+		return isQuery;
+	}
+
+
+	public void setCoreId(String coreId) {
+		this.coreId = coreId;
 	}
 
 
