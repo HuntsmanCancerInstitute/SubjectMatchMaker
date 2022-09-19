@@ -10,7 +10,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -144,7 +146,8 @@ public class Util {
 		File[] files = null;			
 		ArrayList<File> filesAL = new ArrayList<File>();
 		if (directory.isDirectory()){
-			File[] toExamine = directory.listFiles();
+			File[] toExamine;
+			toExamine = directory.listFiles();
 			for (File f: toExamine){
 				if (f.getName().startsWith(startingWith)) filesAL.add(f);
 			}
@@ -154,7 +157,6 @@ public class Util {
 		else if (directory.getName().startsWith(startingWith)) files = new File[]{directory};
 		return files;
 	}
-	
 	
 	/**Executes a String of shell script commands via a temp file.  Only good for Unix.
 	 * @throws IOException */

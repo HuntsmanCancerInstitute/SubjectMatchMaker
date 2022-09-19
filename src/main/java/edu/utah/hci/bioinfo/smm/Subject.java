@@ -28,6 +28,7 @@ public class Subject implements Comparable<Subject> {
 	private double[] topMatchScores = null;
 	private String matchWarning = null;
 	public static final Pattern LEADING_ZEROs = Pattern.compile("^0+");
+	private boolean updateTopMatchKeys = false;
 	
 	
 	//constructor
@@ -145,6 +146,18 @@ public class Subject implements Comparable<Subject> {
 			if (coreIdMaker != null) {
 				coreId = coreIdMaker.createCoreId();
 				coreIdCreated = true;
+			}
+		}
+		
+		//check to see if an update is possible
+		if (topMatchFound) {
+			for (int i=0; i< topMatches[0].comparisonKeys.length; i++) {
+				if (topMatches[0].comparisonKeys[i].length() == 0) {
+					if (comparisonKeys.length != 0) {
+						updateTopMatchKeys = true;
+						
+					}
+				}
 			}
 		}
 	}
@@ -340,6 +353,11 @@ public class Subject implements Comparable<Subject> {
 
 	public void setCoreId(String coreId) {
 		this.coreId = coreId;
+	}
+
+
+	public boolean isUpdateTopMatchKeys() {
+		return updateTopMatchKeys;
 	}
 
 

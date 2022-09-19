@@ -48,6 +48,7 @@ public class SubjectMatchMaker {
 	private HashMap<String,Subject> coreIdSubject = null;
 	private CoreId coreIdMaker = new CoreId();
 	private File lockedRegistry = null;
+	private ArrayList<Subject[]> registryQueryUpdates = new ArrayList<Subject[]>();
 
 	//results files
 	private File updatedRegistry = null;
@@ -125,6 +126,19 @@ public class SubjectMatchMaker {
 
 					//update the registry?
 					updateRegistryWithNoMatches();
+					
+					//any registry entries to be updated
+					if (registryQueryUpdates.size()!=0) {
+						if (verbose) {
+							Util.pl("\nConsider updating the following incomplete registry entries with keys from the queries:");
+							for (Subject[] regQue: registryQueryUpdates) {
+								Util.pl("Registry to update:\n"+regQue[0].fetchJson(false).toString(3));
+								Util.pl("Query with new keys:\n"+regQue[1].fetchJson(false).toString(3)+"\n");
+								
+							}
+						}
+						
+					}
 				}
 			}
 
@@ -223,7 +237,13 @@ public class SubjectMatchMaker {
 		//are they just looking to see what matches and not add non matches to the registry? if so null the coreIdMaker
 		if (addQuerySubjectsToRegistry == false) coreIdMaker = null; 
 		//for each query
-		for (Subject tp: querySubjects) tp.setMatches(coreIdMaker, maxEditScoreForMatch);
+		for (Subject tp: querySubjects) {
+			tp.setMatches(coreIdMaker, maxEditScoreForMatch);
+			//update registry?
+			if (tp.isUpdateTopMatchKeys()) {
+				registryQueryUpdates.add(new Subject[] {tp.getTopMatches()[0], tp});
+			}
+		}
 	}
 
 	private void saveUpdatedRegistry(ArrayList<Subject> additional) throws Exception {
@@ -308,7 +328,10 @@ public class SubjectMatchMaker {
 			//query results
 			JSONObject result = new JSONObject();
 			result.put("topMatchFound", tp.isTopMatchFound());
-			if (tp.isTopMatchFound()) result.put("topMatchCoreId", topMatches[0].getCoreId());
+			if (tp.isTopMatchFound()) {
+				result.put("topMatchCoreId", topMatches[0].getCoreId());
+				if (tp.isUpdateTopMatchKeys()) result.put("updateMissingTopMatchKeys", true);
+			}
 			result.put("newCoreIdCreated", tp.isCoreIdCreated());
 			if (tp.isCoreIdCreated()) result.put("newCoreId", tp.getCoreId());
 			//match warning?
@@ -504,7 +527,7 @@ public class SubjectMatchMaker {
 			}
 			File lr = new File (subjectRegistryDir, "LOCKED");
 			if (lr.exists()) {
-				Util.pl("\tLOCKED file found, registry in use, waiting...");
+				Util.pl("\t"+ lr +" file found, registry in use, waiting...");
 				wait++;
 				//wait 10 seconds
 				Thread.sleep(10000);
@@ -518,6 +541,7 @@ public class SubjectMatchMaker {
 		
 		//is there just one currentRegistry_ file found?
 		File[] currReg = Util.extractFilesStartingWith(subjectRegistryDir, "currentRegistry_");
+		
 		if (currReg.length == 1) subjectRegistryFile = currReg[0];
 		else {
 			lockedRegistry.delete();
