@@ -3,3 +3,5 @@ Barrasso	Jon	7	21	1952	M	393308
 Benet	Michael	11	28	1964	M	880402
 Blackburn	Marsha	6	6	1952	M	432770
 Baldwin	Tammy	2	11	1962	F	2813089
+Obama	Barack	8	4	1961	M	.
+Obama	Barack	8	4	1961	M	.

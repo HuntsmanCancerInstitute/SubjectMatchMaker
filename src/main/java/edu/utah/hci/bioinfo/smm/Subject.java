@@ -2,6 +2,7 @@ package edu.utah.hci.bioinfo.smm;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,10 +27,11 @@ public class Subject implements Comparable<Subject> {
 	private Subject[] topMatches = null;
 	private double[] topMatchScores = null;
 	private String matchWarning = null;
+	public static final Pattern LEADING_ZEROs = Pattern.compile("^0+");
 	
 	
 	//constructor
-	public Subject(int dataLineIndex, String[] t, boolean addCoreId, CoreId coreIdMaker, boolean isQuery) throws IOException {
+	public Subject(int dataLineIndex, String[] t, boolean addCoreId, CoreId coreIdMaker, boolean isQuery, boolean isCaseInsensitive) throws IOException {
 		this.isQuery = isQuery;
 		
 		//required: lastName firstName dobMonth dobDay dobYear gender mrn 
@@ -66,7 +68,9 @@ public class Subject implements Comparable<Subject> {
 			if (gender.equals("M") == false && gender.equals("F") == false) throw new IOException("ERROR: the gender field '"+t[5]+"' is malformed, must be M or F, in subject dataline index : "+dataLineIndex);
 		}
 
-		if (t[6].length()!=0) mrn= t[6];
+		//strip off any leading zeros, e.g. 0012345
+		if (t[6].length()!=0) mrn = LEADING_ZEROs.matcher(t[6]).replaceAll("");
+		
 
 		if (t.length > 7 && t[7].length()!=0) {
 			coreId = t[7];
@@ -82,7 +86,7 @@ public class Subject implements Comparable<Subject> {
 			otherSubjectIds = Util.SEMICOLON.split(t[8]);
 		}
 
-		makeComparisonKeys();
+		makeComparisonKeys(isCaseInsensitive);
 
 	}
 	
@@ -148,7 +152,7 @@ public class Subject implements Comparable<Subject> {
 
 
 	/**Leave missing data as "", these will be skipped.*/
-	private void makeComparisonKeys() {
+	private void makeComparisonKeys(boolean caseInsensitive) {
 		String dob = "";
 		if (dobMonth!=-1 && dobDay!=-1 && dobYear!=-1) dob = dobMonth+"/"+dobDay+"/"+dobYear;
 		comparisonKeys = new String[] {
@@ -157,6 +161,7 @@ public class Subject implements Comparable<Subject> {
 				gender,
 				mrn
 		};
+		if (caseInsensitive) comparisonKeys[0] = comparisonKeys[0].toUpperCase();
 	}
 
 	public synchronized void addTopCandidates(Subject[] topHits) {

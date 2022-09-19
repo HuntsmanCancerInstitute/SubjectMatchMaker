@@ -17,6 +17,13 @@ import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**Consider 
+ encrypting:
+ echo "nvjkfdYTRTT3245bcgdERTR234765zcxvidn" > passPhrase.txt
+ gpg --batch -c --passphrase-file passPhrase.txt registry.txt
+ decrypting:
+ gpg --batch -d --passphrase-file passPhrase.txt -o decrypted.txt registry.txt.gpg
+ * */
 public class SubjectMatchMaker {
 
 	//user defined fields
@@ -25,6 +32,7 @@ public class SubjectMatchMaker {
 	private File matchResultsDirectory = null;
 	private boolean addQuerySubjectsToRegistry = false;
 	private boolean verbose = true;
+	private boolean caseInsensitive = false;
 
 	//internal
 	private Subject[] registrySubjects = null;
@@ -276,6 +284,7 @@ public class SubjectMatchMaker {
 		params.put("registry", subjectRegistryFile.getCanonicalPath());
 		params.put("queries", querySubjectFile.getCanonicalPath());
 		params.put("output", matchResultsDirectory.getCanonicalPath());
+		params.put("isNameCaseInsensitive", caseInsensitive);
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd MMM uuuu HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
 		params.put("date", dtf.format(now));
@@ -393,7 +402,7 @@ public class SubjectMatchMaker {
 			if (line.length()==0 || line.startsWith("#"))continue;
 			String[] fields = Util.TAB.split(line);
 			if (fields.length == 1) cAL.add(fields[0]);
-			else pAL.add(new Subject(index, fields, addCoreId, coreIdMaker, isQuery));
+			else pAL.add(new Subject(index, fields, addCoreId, coreIdMaker, isQuery, caseInsensitive));
 			index++;
 		}
 		in.close();
@@ -439,6 +448,7 @@ public class SubjectMatchMaker {
 						case 'u': updatedRegistry = new File(args[++i]); break;
 						case 's': maxEditScoreForMatch = Double.parseDouble(args[++i]); break;
 						case 'v': verbose = false; break;
+						case 'c': caseInsensitive = true; break;
 						default: Util.printErrAndExit("\nProblem, unknown option! " + mat.group());
 						}
 					}
@@ -526,7 +536,8 @@ public class SubjectMatchMaker {
 				"-p First missing key score penalty "+ missingOneKeyPenalty+ "\n"+
 				"-k Subsequent missing key score penalty "+ missingAdditionalKeyPenalty+ "\n"+
 				"-t Number threads "+ numberThreads+ "\n"+
-				"-m Number of matches to return "+ numberTopMatchesToReturn;
+				"-m Number of matches to return "+ numberTopMatchesToReturn+"\n"+
+				"-c Is case-insensitive "+caseInsensitive;
 
 		Util.pl(opt);
 	}
@@ -570,7 +581,7 @@ public class SubjectMatchMaker {
 	public static void printDocs(){
 		Util.pl("\n" +
 				"**************************************************************************************\n" +
-				"**                            Subject Match Maker : May 2022                        **\n" +
+				"**                           Subject Match Maker : Sept 2022                        **\n" +
 				"**************************************************************************************\n" +
 				"SMM attempts to match subject's PHI keys (FirstLastName, DoB, Gender, MRN) against a\n"+
 				"registry of the same and fetch their unique subject coreIds.  SMM uses a sum of\n"+
@@ -598,9 +609,10 @@ public class SubjectMatchMaker {
 				"-k Score penatly for additional missing keys, defaults to 1\n"+
 				"-t Number of threads to use, defaults to all.\n"+
 				"-m Number of top matches to return per query, defaults to 3\n"+
+				"-c Case-insensitive name matching, defaults to case sensitive.\n"+
 
 				"\nExample: java -jar pathTo/SubjectIdMatchMaker_xxx.jar -r ~/PHI/SMMRegistry \n"+
-				"      -q ~/Tempus/newPatients_PHI.txt -o ~/Tempus/SMMRes/ -a \n"+
+				"      -q ~/Tempus/newPatients_PHI.txt -o ~/Tempus/SMMRes/ -a -c \n"+
 				"\n**************************************************************************************\n");
 	}
 

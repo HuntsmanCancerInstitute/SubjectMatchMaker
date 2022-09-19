@@ -15,6 +15,8 @@ public class CoreId {
 	private static final String NUMBERS = "23456789";
 	private Random random = null;
 	
+	// if modifing also do in util.gen.Misc in USeq
+	
 	public CoreId () {
 		random = new Random();
 	}

@@ -85,7 +85,7 @@ public class SubjectMatchMakerTest {
 			//check the json file
 			File json = new File(outputDirectory, "matchReport_PHI.json");
 			assertTrue(json.exists());
-			checkNoUpdateJson(json, false);
+			checkNoUpdateJson(json, false, false);
 			
 			cleanupLocalDirs();
 		} catch (Exception e) {
@@ -119,7 +119,7 @@ public class SubjectMatchMakerTest {
 			
 			//check the json file
 			File json = new File(outputDirectory, "matchReport_PHI.json");
-			checkNoUpdateJson(json, true);
+			checkNoUpdateJson(json, true, false);
 			
 			//launch the search again on the updated registry containing the non matches
 			File json2 = new File(outputDirectory, "matchReport_PHI.json");
@@ -176,6 +176,40 @@ public class SubjectMatchMakerTest {
 			fail("Exception caught.");
 		}
 	}
+
+	@Test
+	public void runSearchNoUpdateCaseInsensitive() {
+		try {
+			setupLocalDirs();
+
+			//launch with first query on new Registry, this will create new coreIDs and update the the registry
+			File registryDirectory = new File(testResourceDir,"Registry");
+			File outputDirectory = new File(testResourceDir,"Results");
+			
+			String[] args = {
+					"-r", registryDirectory.getCanonicalPath(),
+					"-q", testQueries.getCanonicalPath(),
+					"-o", outputDirectory.getCanonicalPath(),
+					"-c"
+			};
+			SubjectMatchMaker smm = new SubjectMatchMaker(args);
+			
+			//launch the real search, this will grab the updated registry and generate two output files, no additional update
+			smm = new SubjectMatchMaker(args);
+			File[] reports = Util.extractFilesStartingWith(outputDirectory, "matchReport");
+			assertTrue(reports.length==2);
+			
+			//check the json file
+			File json = new File(outputDirectory, "matchReport_PHI.json");
+			assertTrue(json.exists());
+			checkNoUpdateJson(json, false, true);
+			
+			cleanupLocalDirs();
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception caught.");
+		}
+	}	
 	
 	private void checkWithUpdateJson(File json, boolean newCoreIdsCreated) throws IOException {
 		String jString = Util.loadFile(json, " ", true);
@@ -218,7 +252,7 @@ public class SubjectMatchMakerTest {
 	    		 assertFalse(result.has("newCoreId"));
 	    		 JSONArray matches = result.getJSONArray("matches");
 	    		 JSONObject match = matches.getJSONObject(2);
-	    		 assertTrue(match.getString("lastName").equals("Warner"));
+	    		 assertTrue(match.getString("lastName").equals("Obama"));
 	    	 }
 	    	 else if (lastName.equals("Blackburn")) {
 	    		 assertTrue(result.has("topMatchCoreId"));
@@ -241,7 +275,7 @@ public class SubjectMatchMakerTest {
 	     }
 	}
 	
-	private void checkNoUpdateJson(File json, boolean newCoreIdsCreated) throws IOException {
+	private void checkNoUpdateJson(File json, boolean newCoreIdsCreated, boolean checkTopMatchWarning) throws IOException {
 		String jString = Util.loadFile(json, " ", true);
 	    JSONObject main = new JSONObject(jString);
 	     
@@ -280,9 +314,11 @@ public class SubjectMatchMakerTest {
 	    	 else if (lastName.equals("Benet")) {
 	    		 assertTrue(result.has("topMatchCoreId"));
 	    		 assertFalse(result.has("newCoreId"));
+	    		 if (checkTopMatchWarning) assertTrue(result.has("topMatchWarning")); 
 	    		 JSONArray matches = result.getJSONArray("matches");
 	    		 JSONObject match = matches.getJSONObject(2);
-	    		 assertTrue(match.getString("lastName").equals("Cassidy"));
+	    		 assertTrue(match.getString("lastName").equals("Warner"));
+	    		 
 	    	 }
 	    	 else if (lastName.equals("Blackburn")) {
 	    		 assertFalse(result.has("topMatchCoreId"));
