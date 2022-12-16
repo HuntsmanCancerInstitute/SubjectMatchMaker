@@ -33,6 +33,7 @@ public class SubjectMatchMaker {
 	private boolean addQuerySubjectsToRegistry = false;
 	private boolean verbose = true;
 	private boolean caseInsensitive = false;
+	private boolean updateRegistryWithQuerySubjects = false;
 
 	//internal
 	private Subject[] registrySubjects = null;
@@ -125,7 +126,7 @@ public class SubjectMatchMaker {
 					printResults();
 
 					//update the registry?
-					updateRegistryWithNoMatches();
+					updateRegistry();
 					
 					//any registry entries to be updated
 					if (registryQueryUpdates.size()!=0) {
@@ -210,6 +211,7 @@ public class SubjectMatchMaker {
 		
 	}
 
+	/*
 	private void updateRegistryWithNoMatches() throws Exception {
 		//do they want to update the registry
 		if (addQuerySubjectsToRegistry) {
@@ -231,6 +233,43 @@ public class SubjectMatchMaker {
 				saveUpdatedRegistry(toAdd);
 			}
 		}
+	}*/
+	
+	private void updateRegistry() throws Exception {
+		//do they want to update the registry
+		ArrayList<Subject> toAdd = new ArrayList<Subject>();
+		
+		boolean updateIt = false;
+		if (addQuerySubjectsToRegistry) {
+			//is there anything to update
+			HashSet<String> newCoreIds = new HashSet<String>();
+			for (Subject s: querySubjects) {
+				if (s.isCoreIdCreated()) {
+					//must watch out for duplicate new coreIds, only add the first Subject query
+					String cid = s.getCoreId();
+					if (newCoreIds.contains(cid) == false) {
+						newCoreIds.add(cid);
+						toAdd.add(s);
+					}
+				}
+			}
+			if (toAdd.size()!=0) {
+				Util.pl("\nSaving updated registry with "+toAdd.size()+" unmatched queries...");
+				updateIt = true;
+				
+			}
+		}
+		if (updateIt==false && updateRegistryWithQuerySubjects) {
+			for (Subject s: registrySubjects) {
+				if (s.getFieldsWereUpdated()) {
+					updateIt = true;
+					break;
+				}
+			}
+			if (updateIt) Util.pl("\nSaving registry with additional info...");
+		}
+		
+		if (updateIt) saveUpdatedRegistry(toAdd);
 	}
 
 	private void checkForMatches() throws IOException {
@@ -239,10 +278,6 @@ public class SubjectMatchMaker {
 		//for each query
 		for (Subject tp: querySubjects) {
 			tp.setMatches(coreIdMaker, maxEditScoreForMatch);
-			//update registry?
-			if (tp.isUpdateTopMatchKeys()) {
-				registryQueryUpdates.add(new Subject[] {tp.getTopMatches()[0], tp});
-			}
 		}
 	}
 
@@ -253,9 +288,10 @@ public class SubjectMatchMaker {
 		//write out updated registry
 		updatedRegistry = new File (registryDir, "updatedRegistry"+time+"_PHI.txt");
 		PrintWriter out = new PrintWriter ( new FileWriter(updatedRegistry));
-		out.println("#LastName\tFirstName\tDoBMonth(1-12)\tDoBDay(1-31)\tDoBYear(1900-2050)\tGender(M|F)\tMRN\tCoreId\totherId(s);delimited)");
+		out.println("#LastName\tFirstName\tDoBMonth(1-12)\tDoBDay(1-31)\tDoBYear(1900-2050)\tGender(M|F)\tMRN\tCoreId\tOtherIds(;delimited)");
 		for (Subject u: registrySubjects) out.println(u.toString());
-		if (additional != null) for (Subject u: additional) out.println(u.toString());
+		//might be no additional to save
+		if (additional!=null) for (Subject u: additional) out.println(u.toString());
 		out.close();
 		
 		//rename original
@@ -330,7 +366,6 @@ public class SubjectMatchMaker {
 			result.put("topMatchFound", tp.isTopMatchFound());
 			if (tp.isTopMatchFound()) {
 				result.put("topMatchCoreId", topMatches[0].getCoreId());
-				if (tp.isUpdateTopMatchKeys()) result.put("updateMissingTopMatchKeys", true);
 			}
 			result.put("newCoreIdCreated", tp.isCoreIdCreated());
 			if (tp.isCoreIdCreated()) result.put("newCoreId", tp.getCoreId());
@@ -425,7 +460,7 @@ public class SubjectMatchMaker {
 			if (line.length()==0 || line.startsWith("#"))continue;
 			String[] fields = Util.TAB.split(line);
 			if (fields.length == 1) cAL.add(fields[0]);
-			else pAL.add(new Subject(index, fields, addCoreId, coreIdMaker, isQuery, caseInsensitive));
+			else pAL.add(new Subject(index, fields, addCoreId, coreIdMaker, isQuery, caseInsensitive, updateRegistryWithQuerySubjects));
 			index++;
 		}
 		in.close();
@@ -468,7 +503,7 @@ public class SubjectMatchMaker {
 						case 'm': numberTopMatchesToReturn = Integer.parseInt(args[++i]); break;
 						case 'p': missingOneKeyPenalty = Double.parseDouble(args[++i]); break;
 						case 'a': addQuerySubjectsToRegistry = true; break;
-						case 'u': updatedRegistry = new File(args[++i]); break;
+						case 'u': updateRegistryWithQuerySubjects = true; break;
 						case 's': maxEditScoreForMatch = Double.parseDouble(args[++i]); break;
 						case 'v': verbose = false; break;
 						case 'c': caseInsensitive = true; break;
@@ -561,7 +596,8 @@ public class SubjectMatchMaker {
 				"-k Subsequent missing key score penalty "+ missingAdditionalKeyPenalty+ "\n"+
 				"-t Number threads "+ numberThreads+ "\n"+
 				"-m Number of matches to return "+ numberTopMatchesToReturn+"\n"+
-				"-c Is case-insensitive "+caseInsensitive;
+				"-c Is case-insensitive "+caseInsensitive +"\n"+
+		        "-u Update missing keys in registry "+ updateRegistryWithQuerySubjects;
 
 		Util.pl(opt);
 	}
@@ -621,13 +657,14 @@ public class SubjectMatchMaker {
 				"      lastName firstName dobMonth(1-12) dobDay(1-31) dobYear(1900-2050) gender(M|F)\n"+
 				"      mrn coreId otherIds. The last two columns are optional. Semicolon delimit\n"+
 				"      otherIds. Use '.' for missing info. CoreIds will be created as needed.\n"+
-				"      Example: Biden Joseph 11 20 1942 M 19485763 . 7474732,847362\n"+
+				"      Example: Biden Joseph 11 20 1942 M 19485763 . 7474732;847362\n"+
 				"-q File containing queries to match to the registry, ditto. Alternatively, provide\n"+
 				"      a single column of coreIds to use in fetching subject info from the registry.\n"+
 				"-o Directory to write out the match result reports.\n"+
 
 				"\nOptional:\n"+
 				"-a Add query subjects that failed to match to the registry and assign them a coreId.\n"+
+				"-u Update missing registry keys with those from matching queries.\n"+
 				"-s Max edit score for match, defaults to 0.12, smaller scores are more stringent.\n"+
 				"-p Score penalty for a single missing key, defaults to 0.12\n"+
 				"-k Score penatly for additional missing keys, defaults to 1\n"+
@@ -636,7 +673,7 @@ public class SubjectMatchMaker {
 				"-c Case-insensitive name matching, defaults to case sensitive.\n"+
 
 				"\nExample: java -jar pathTo/SubjectIdMatchMaker_xxx.jar -r ~/PHI/SMMRegistry \n"+
-				"      -q ~/Tempus/newPatients_PHI.txt -o ~/Tempus/SMMRes/ -a -c \n"+
+				"      -q ~/Tempus/newPatients_PHI.txt -o ~/Tempus/SMMRes/ -a -c -u\n"+
 				"\n**************************************************************************************\n");
 	}
 

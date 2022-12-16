@@ -29,17 +29,19 @@ public class Subject implements Comparable<Subject> {
 	private String matchWarning = null;
 	public static final Pattern LEADING_ZEROs = Pattern.compile("^0+");
 	private boolean updateTopMatchKeys = false;
+	private boolean fieldsWereUpdated = false;
 	
 	
 	//constructor
-	public Subject(int dataLineIndex, String[] t, boolean addCoreId, CoreId coreIdMaker, boolean isQuery, boolean isCaseInsensitive) throws IOException {
+	public Subject(int dataLineIndex, String[] t, boolean addCoreId, CoreId coreIdMaker, boolean isQuery, boolean isCaseInsensitive, boolean updateTopMatchKeys) throws IOException {
 		this.isQuery = isQuery;
+		this.updateTopMatchKeys = updateTopMatchKeys;
 		
 		//required: lastName firstName dobMonth dobDay dobYear gender mrn 
 		//             0        1          2       3      4      5     6
 		//optional: coreId otherIds
 		//              7        8
-		if (t.length< 7) throw new IOException("ERROR: too few fields in subject dataline index : "+dataLineIndex);
+		if (t.length< 7) throw new IOException("ERROR: too few fields in subject, see dataline : "+dataLineIndex);
 		//remove leading or trailing whitespace and placeholder '.'
 		for (int i=0; i<t.length; i++) {
 			t[i] = t[i].trim();
@@ -148,16 +150,41 @@ public class Subject implements Comparable<Subject> {
 				coreIdCreated = true;
 			}
 		}
-		
-		//check to see if an update is possible
-		if (topMatchFound) {
-			for (int i=0; i< topMatches[0].comparisonKeys.length; i++) {
-				if (topMatches[0].comparisonKeys[i].length() == 0) {
-					if (comparisonKeys.length != 0) {
-						updateTopMatchKeys = true;
-						
-					}
-				}
+
+		//check to see if an update is possible and requested
+		if (topMatchFound && updateTopMatchKeys) {
+			Subject reg = topMatches[0];
+			boolean updated = false;
+			//String regBeforeUp = reg.toString();
+			if (reg.lastName.length()==0 && this.lastName.length()!=0) {
+				reg.lastName = this.lastName;
+				updated = true;
+			}
+			if (reg.firstName.length()==0 && this.firstName.length()!=0) {
+				reg.firstName = this.firstName;
+				updated = true;
+			}
+			if (reg.dobDay==-1 && reg.dobMonth==-1 && reg.dobYear==-1 && this.dobDay!=-1 && this.dobMonth!=-1 && this.dobYear!=-1) {
+				reg.dobDay = this.dobDay;
+				reg.dobMonth = this.dobMonth;
+				reg.dobYear = this.dobYear;
+				updated = true;
+			}
+			if (reg.gender.length()==0 && this.gender.length()!=0) {
+				reg.gender = this.gender;
+				updated = true;
+			}
+			if (reg.mrn.length()==0 && this.mrn.length()!=0) {
+				reg.mrn = this.mrn;
+				updated = true;
+			}
+			if (reg.otherSubjectIds==null && this.otherSubjectIds!=null) {
+				reg.otherSubjectIds = this.otherSubjectIds;
+				updated = true;
+			}
+			if (updated) {
+				//Util.pl("\nUpdated original:\n"+regBeforeUp+"\nupdated:\n"+reg.toString());
+				reg.setFieldsWereUpdated(true);
 			}
 		}
 	}
@@ -356,12 +383,13 @@ public class Subject implements Comparable<Subject> {
 	}
 
 
-	public boolean isUpdateTopMatchKeys() {
-		return updateTopMatchKeys;
+	public void setFieldsWereUpdated(boolean b) {
+		fieldsWereUpdated = true;
 	}
-
-
-
+	
+	public boolean getFieldsWereUpdated() {
+		return fieldsWereUpdated;
+	}
 
 
 

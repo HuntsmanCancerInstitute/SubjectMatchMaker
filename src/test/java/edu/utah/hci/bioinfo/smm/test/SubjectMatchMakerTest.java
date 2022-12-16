@@ -17,12 +17,9 @@ public class SubjectMatchMakerTest {
 
 	//define the test resource dir on your local computer
 	private static File testResourceDir = new File ("/Users/u0028003/Code/SubjectMatchMaker/TestingResources");
-	
-	
 	private static File testQueries = new File (testResourceDir, "testQueries.txt");
 	private static File testCoreIdQueries = new File (testResourceDir, "testCoreIdQueries.txt");
 	private static File testRegistry = new File (testResourceDir, "startingRegistry_NoCoreIds.txt");
-	
 	
 	@Test
 	public void testAddCoreIdsToRegistry() {
@@ -126,13 +123,57 @@ public class SubjectMatchMakerTest {
 			smm = new SubjectMatchMaker(args);
 			checkWithUpdateJson(json2, true);
 			
+			cleanupLocalDirs();
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception caught.");
+		}
+	}
+	
+	@Test
+	public void runSearchWithRegistryKeyUpdate() {
+		try {
+			setupLocalDirs();
+
+			//launch with first query on new Registry, this will create new coreIDs and update the the registry
+			File registryDirectory = new File(testResourceDir,"Registry");
+			File outputDirectory = new File(testResourceDir,"Results");
+			String[] args = {
+					"-r", registryDirectory.getCanonicalPath(),
+					"-q", testQueries.getCanonicalPath(),
+					"-o", outputDirectory.getCanonicalPath(),
+					"-a"
+			};
+			SubjectMatchMaker smm = new SubjectMatchMaker(args);
 			
+			//launch the real search, this will updated registry with new info for Susan Collins
+			File testQuery = new File(testResourceDir,"testQueryWithMoreInfo.txt");
+			args = new String[]{
+					"-r", registryDirectory.getCanonicalPath(),
+					"-q", testQuery.getCanonicalPath(),
+					"-o", outputDirectory.getCanonicalPath(),
+					"-u"
+			};
+			smm = new SubjectMatchMaker(args);
+			
+			checkCollins(smm);
 			
 			cleanupLocalDirs();
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception caught.");
 		}
+	}
+	
+	private void checkCollins(SubjectMatchMaker smm) {
+		boolean found = false;
+		String[] lines = Util.loadFile(smm.getUpdatedRegistry());
+		for (String l: lines) if (l.contains("Collins") && l.contains("avaId123;hciId456")) {
+			found = true;
+			break;
+		}
+		assertTrue(found);
+		
 	}
 	
 	private void checkObama(SubjectMatchMaker smm) {

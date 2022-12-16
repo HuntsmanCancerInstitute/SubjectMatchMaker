@@ -17,7 +17,7 @@ Cardin	Ben	10	5	1943	M	624429
 Carper	Tom	1	23	1947	M	507556
 Casey	Bob	4	13	1960	M	258179
 Cassidy	Bill	9	28	1957	M	804904
-Collins	Susan	12	7	1952	F	590088
+Collins	Susan	12	7	1952	F	.
 Coons	Chris	9	9	1963	M	894007
 Cornyn	John	2	2	1952	M	784769
 Cortez Masto	Catherine	3	29	1964	F	560133
